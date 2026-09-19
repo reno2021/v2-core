@@ -64,7 +64,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         address indexed sender,
         address indexed token,
         address indexed recipient,
-        uint totalAmount,
+        uint transferAmount,
         uint rewardAmount,
         uint developmentAmount
     );
@@ -103,8 +103,17 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
             uint rewardAmount = amountIn.mul(REWARD_SWAP_FEE_BPS) / FEE_DENOMINATOR;
             uint developmentAmount = feeAmount.sub(rewardAmount);
             address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
-            _safeTransfer(token, feeRecipient, feeAmount);
-            emit ProtocolFeePaid(msg.sender, token, feeRecipient, feeAmount, rewardAmount, developmentAmount);
+            address rewardRecipient = IUniswapV2Factory(factory).rewardFeeRecipient();
+            address developmentRecipient = IUniswapV2Factory(factory).developmentFeeRecipient();
+            require(rewardRecipient == feeRecipient && developmentRecipient == feeRecipient, 'UniswapV2: INVALID_FEE_RECIPIENT');
+            if (rewardAmount > 0) {
+                _safeTransfer(token, rewardRecipient, rewardAmount);
+                emit ProtocolFeePaid(msg.sender, token, rewardRecipient, rewardAmount, rewardAmount, 0);
+            }
+            if (developmentAmount > 0) {
+                _safeTransfer(token, developmentRecipient, developmentAmount);
+                emit ProtocolFeePaid(msg.sender, token, developmentRecipient, developmentAmount, 0, developmentAmount);
+            }
         }
     }
 

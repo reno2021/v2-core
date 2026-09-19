@@ -35,7 +35,7 @@ interface IUniswapV2Pair {
         address indexed sender,
         address indexed token,
         address indexed recipient,
-        uint totalAmount,
+        uint transferAmount,
         uint rewardAmount,
         uint developmentAmount
     );
