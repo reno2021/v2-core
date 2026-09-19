@@ -100,18 +100,18 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     function _takeProtocolFee(address token, uint amountIn) private returns (uint feeAmount) {
         feeAmount = amountIn.mul(TOTAL_SWAP_FEE_BPS) / FEE_DENOMINATOR;
         if (feeAmount > 0) {
-            address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
             uint rewardAmount = amountIn.mul(REWARD_SWAP_FEE_BPS) / FEE_DENOMINATOR;
             uint developmentAmount = feeAmount.sub(rewardAmount);
-            _safeTransfer(token, feeRecipient, feeAmount);
-            emit ProtocolFeePaid(
-                msg.sender,
-                token,
-                feeRecipient,
-                feeAmount,
-                rewardAmount,
-                developmentAmount
-            );
+            address rewardRecipient = IUniswapV2Factory(factory).rewardFeeRecipient();
+            address developmentRecipient = IUniswapV2Factory(factory).developmentFeeRecipient();
+            if (rewardAmount > 0) {
+                _safeTransfer(token, rewardRecipient, rewardAmount);
+                emit ProtocolFeePaid(msg.sender, token, rewardRecipient, rewardAmount, rewardAmount, 0);
+            }
+            if (developmentAmount > 0) {
+                _safeTransfer(token, developmentRecipient, developmentAmount);
+                emit ProtocolFeePaid(msg.sender, token, developmentRecipient, developmentAmount, 0, developmentAmount);
+            }
         }
     }
 
@@ -132,7 +132,6 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         }
         require(liquidity > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED');
         _mint(to, liquidity);
-        _update(balance0, balance1, _reserve0, _reserve1);
         _update(balance0, balance1, _reserve0, _reserve1);
         emit Mint(msg.sender, amount0, amount1);
     }
@@ -155,7 +154,6 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         _safeTransfer(_token1, to, amount1);
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
-        _update(balance0, balance1, _reserve0, _reserve1);
         _update(balance0, balance1, _reserve0, _reserve1);
         emit Burn(msg.sender, amount0, amount1, to);
     }

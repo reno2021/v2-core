@@ -13,6 +13,7 @@ import { ecsign } from "ethereumjs-util";
 
 import { expandTo18Decimals, getApprovalDigest } from "./shared/utilities";
 
+import ChainId from "../build/ChainId.json";
 import ERC20 from "../build/ERC20.json";
 
 chai.use(solidity);
@@ -29,12 +30,15 @@ describe("UniswapV2ERC20", () => {
   const [wallet, other] = provider.getWallets();
 
   let token: Contract;
+  let chainIdReader: Contract;
   beforeEach(async () => {
     token = await deployContract(wallet, ERC20, [TOTAL_SUPPLY]);
+    chainIdReader = await deployContract(wallet, ChainId, []);
   });
 
   it("name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH", async () => {
     const name = await token.name();
+    const chainId = await chainIdReader.getChainId();
     expect(name).to.eq("Uniswap V2");
     expect(await token.symbol()).to.eq("UNI-V2");
     expect(await token.decimals()).to.eq(18);
@@ -52,7 +56,7 @@ describe("UniswapV2ERC20", () => {
             ),
             keccak256(toUtf8Bytes(name)),
             keccak256(toUtf8Bytes("1")),
-            1,
+            chainId,
             token.address
           ]
         )

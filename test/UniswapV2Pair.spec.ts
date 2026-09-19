@@ -142,8 +142,17 @@ describe("UniswapV2Pair", () => {
         wallet.address,
         token0.address,
         ADMIN_WALLET,
-        expectedFee,
         expectedRewardFee,
+        expectedRewardFee,
+        0
+      )
+      .to.emit(pair, "ProtocolFeePaid")
+      .withArgs(
+        wallet.address,
+        token0.address,
+        ADMIN_WALLET,
+        expectedDevelopmentFee,
+        0,
         expectedDevelopmentFee
       )
       .to.emit(pair, "Swap")
@@ -207,8 +216,17 @@ describe("UniswapV2Pair", () => {
         wallet.address,
         token0.address,
         ADMIN_WALLET,
-        expectedFee,
         expectedRewardFee,
+        expectedRewardFee,
+        0
+      )
+      .to.emit(pair, "ProtocolFeePaid")
+      .withArgs(
+        wallet.address,
+        token0.address,
+        ADMIN_WALLET,
+        expectedDevelopmentFee,
+        0,
         expectedDevelopmentFee
       );
 
