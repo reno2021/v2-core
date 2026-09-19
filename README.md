@@ -102,6 +102,7 @@ This core repo intentionally does **not** add privileged staking drains, mutable
 - The admin wallet is immutable in this core fork.
 - Flash swaps remain supported.
 - Reentrancy protection remains the upstream pair-level `lock` guard.
+- Tokens that reduce the pair's balance during the protocol-fee payout path are rejected with `UniswapV2: FEE_ON_TRANSFER_UNSUPPORTED`.
 - There is no audit or deployment claim in this repository.
 - Solidity compatibility target remains `0.5.16`.
 

@@ -102,11 +102,8 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         if (feeAmount > 0) {
             uint rewardAmount = amountIn.mul(REWARD_SWAP_FEE_BPS) / FEE_DENOMINATOR;
             uint developmentAmount = feeAmount.sub(rewardAmount);
-            address rewardRecipient = IUniswapV2Factory(factory).rewardFeeRecipient();
-            address developmentRecipient = IUniswapV2Factory(factory).developmentFeeRecipient();
             address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
-            if (rewardAmount > 0) _safeTransfer(token, rewardRecipient, rewardAmount);
-            if (developmentAmount > 0) _safeTransfer(token, developmentRecipient, developmentAmount);
+            _safeTransfer(token, feeRecipient, feeAmount);
             emit ProtocolFeePaid(msg.sender, token, feeRecipient, feeAmount, rewardAmount, developmentAmount);
         }
     }

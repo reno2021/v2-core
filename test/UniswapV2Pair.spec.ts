@@ -12,7 +12,10 @@ import {
 import { expandTo18Decimals, mineBlock, encodePrice } from "./shared/utilities";
 import { pairFixture } from "./shared/fixtures";
 
+import ERC20 from "../build/ERC20.json";
+import FeeOnTransferERC20 from "../build/FeeOnTransferERC20.json";
 import MockUniswapV2Callee from "../build/MockUniswapV2Callee.json";
+import UniswapV2Pair from "../build/UniswapV2Pair.json";
 
 const MINIMUM_LIQUIDITY = bigNumberify(10).pow(3);
 const FEE_DENOMINATOR = bigNumberify(10000);
@@ -268,6 +271,53 @@ describe("UniswapV2Pair", () => {
     await expect(
       pair.swap(bigNumberify(1), 0, callee.address, "0x01", overrides)
     ).to.be.revertedWith("UniswapV2: LOCKED");
+  });
+
+  it("rejects protocol fee payouts that deflate the pair balance", async () => {
+    const feeToken = await deployContract(wallet, FeeOnTransferERC20, [
+      expandTo18Decimals(10000)
+    ]);
+    const plainToken = await deployContract(wallet, ERC20, [
+      expandTo18Decimals(10000)
+    ]);
+
+    await factory.createPair(feeToken.address, plainToken.address, overrides);
+    const pairAddress = await factory.getPair(
+      feeToken.address,
+      plainToken.address
+    );
+    const customPair = new Contract(
+      pairAddress,
+      UniswapV2Pair.abi,
+      provider
+    ).connect(wallet);
+
+    const customToken0Address = await customPair.token0();
+    const reserve0Token =
+      feeToken.address === customToken0Address ? feeToken : plainToken;
+    const reserve1Token =
+      feeToken.address === customToken0Address ? plainToken : feeToken;
+
+    const reserve0Amount = expandTo18Decimals(10);
+    const reserve1Amount = expandTo18Decimals(10);
+    await reserve0Token.transfer(customPair.address, reserve0Amount);
+    await reserve1Token.transfer(customPair.address, reserve1Amount);
+    await customPair.mint(wallet.address, overrides);
+
+    const reserves = await customPair.getReserves();
+    const swapAmount = expandTo18Decimals(1);
+    await feeToken.transfer(customPair.address, swapAmount);
+
+    const feeTokenIsToken0 = feeToken.address === customToken0Address;
+    const reserveIn = feeTokenIsToken0 ? reserves[0] : reserves[1];
+    const reserveOut = feeTokenIsToken0 ? reserves[1] : reserves[0];
+    const amountOut = getAmountOut(swapAmount, reserveIn, reserveOut);
+
+    await expect(
+      feeTokenIsToken0
+        ? customPair.swap(0, amountOut, wallet.address, "0x", overrides)
+        : customPair.swap(amountOut, 0, wallet.address, "0x", overrides)
+    ).to.be.revertedWith("UniswapV2: FEE_ON_TRANSFER_UNSUPPORTED");
   });
 
   it("handles zero and exact-input edge cases", async () => {
