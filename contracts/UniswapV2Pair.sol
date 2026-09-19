@@ -184,11 +184,20 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         uint fee1 = 0;
         if (amount0In > 0) fee0 = amount0In.mul(TOTAL_SWAP_FEE_BPS) / FEE_DENOMINATOR;
         if (amount1In > 0) fee1 = amount1In.mul(TOTAL_SWAP_FEE_BPS) / FEE_DENOMINATOR;
-        balance0 = balance0.sub(fee0);
-        balance1 = balance1.sub(fee1);
-        require(balance0.mul(balance1) >= uint(_reserve0).mul(_reserve1), 'UniswapV2: K');
+        uint balance0AfterFee = balance0.sub(fee0);
+        uint balance1AfterFee = balance1.sub(fee1);
+        uint balance0Adjusted = balance0AfterFee.mul(FEE_DENOMINATOR);
+        uint balance1Adjusted = balance1AfterFee.mul(FEE_DENOMINATOR);
+        if (amount0In > 0) balance0Adjusted = balance0Adjusted.sub(amount0In.mul(TOTAL_SWAP_FEE_BPS).sub(fee0.mul(FEE_DENOMINATOR)));
+        if (amount1In > 0) balance1Adjusted = balance1Adjusted.sub(amount1In.mul(TOTAL_SWAP_FEE_BPS).sub(fee1.mul(FEE_DENOMINATOR)));
+        require(
+            balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(FEE_DENOMINATOR**2),
+            'UniswapV2: K'
+        );
         if (fee0 > 0) _takeProtocolFee(token0, amount0In);
         if (fee1 > 0) _takeProtocolFee(token1, amount1In);
+        balance0 = balance0AfterFee;
+        balance1 = balance1AfterFee;
         }
 
         _update(balance0, balance1, _reserve0, _reserve1);

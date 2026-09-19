@@ -240,6 +240,49 @@ describe("UniswapV2Pair", () => {
     expect(reserves[1]).to.eq(reserve1);
   });
 
+  it("supports flash swaps repaid with the opposite token", async () => {
+    const reserve0 = expandTo18Decimals(5);
+    const reserve1 = expandTo18Decimals(10);
+    await addLiquidity(reserve0, reserve1);
+
+    const amount0Out = expandTo18Decimals(1);
+    const repayment1 = getAmountIn(amount0Out, reserve1, reserve0);
+    const expectedFee = repayment1.mul(TOTAL_SWAP_FEE_BPS).div(FEE_DENOMINATOR);
+    const expectedRewardFee = repayment1
+      .mul(REWARD_SWAP_FEE_BPS)
+      .div(FEE_DENOMINATOR);
+    const expectedDevelopmentFee = expectedFee.sub(expectedRewardFee);
+
+    const callee = await deployContract(wallet, MockUniswapV2Callee, []);
+    await token1.transfer(callee.address, repayment1);
+    await callee.configure(pair.address, 0, repayment1, false);
+
+    await expect(pair.swap(amount0Out, 0, callee.address, "0x01", overrides))
+      .to.emit(pair, "ProtocolFeePaid")
+      .withArgs(
+        wallet.address,
+        token1.address,
+        ADMIN_WALLET,
+        expectedRewardFee,
+        expectedRewardFee,
+        0
+      )
+      .to.emit(pair, "ProtocolFeePaid")
+      .withArgs(
+        wallet.address,
+        token1.address,
+        ADMIN_WALLET,
+        expectedDevelopmentFee,
+        0,
+        expectedDevelopmentFee
+      );
+
+    const reserves = await pair.getReserves();
+    expect(reserves[0]).to.eq(reserve0.sub(amount0Out));
+    expect(reserves[1]).to.eq(reserve1.add(repayment1).sub(expectedFee));
+    expect(await token1.balanceOf(ADMIN_WALLET)).to.eq(expectedFee);
+  });
+
   it("blocks reentrancy during flash swap callbacks", async () => {
     const reserve0 = expandTo18Decimals(5);
     const reserve1 = expandTo18Decimals(5);
