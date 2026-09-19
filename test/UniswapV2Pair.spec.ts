@@ -114,6 +114,7 @@ describe("UniswapV2Pair", () => {
     expect(await pair.balanceOf(wallet.address)).to.eq(
       expectedLiquidity.sub(MINIMUM_LIQUIDITY)
     );
+    expect(await pair.balanceOf(AddressZero)).to.eq(MINIMUM_LIQUIDITY);
   });
 
   it("swap routes 1.2 percent input fee to admin and preserves reserves", async () => {
@@ -142,17 +143,8 @@ describe("UniswapV2Pair", () => {
         wallet.address,
         token0.address,
         ADMIN_WALLET,
+        expectedFee,
         expectedRewardFee,
-        expectedRewardFee,
-        0
-      )
-      .to.emit(pair, "ProtocolFeePaid")
-      .withArgs(
-        wallet.address,
-        token0.address,
-        ADMIN_WALLET,
-        expectedDevelopmentFee,
-        0,
         expectedDevelopmentFee
       )
       .to.emit(pair, "Swap")
@@ -216,17 +208,8 @@ describe("UniswapV2Pair", () => {
         wallet.address,
         token0.address,
         ADMIN_WALLET,
+        expectedFee,
         expectedRewardFee,
-        expectedRewardFee,
-        0
-      )
-      .to.emit(pair, "ProtocolFeePaid")
-      .withArgs(
-        wallet.address,
-        token0.address,
-        ADMIN_WALLET,
-        expectedDevelopmentFee,
-        0,
         expectedDevelopmentFee
       );
 
@@ -263,17 +246,8 @@ describe("UniswapV2Pair", () => {
         wallet.address,
         token1.address,
         ADMIN_WALLET,
+        expectedFee,
         expectedRewardFee,
-        expectedRewardFee,
-        0
-      )
-      .to.emit(pair, "ProtocolFeePaid")
-      .withArgs(
-        wallet.address,
-        token1.address,
-        ADMIN_WALLET,
-        expectedDevelopmentFee,
-        0,
         expectedDevelopmentFee
       );
 
@@ -343,6 +317,8 @@ describe("UniswapV2Pair", () => {
         token1Amount.sub(1000),
         wallet.address
       );
+
+    expect(await pair.balanceOf(AddressZero)).to.eq(MINIMUM_LIQUIDITY);
   });
 
   it("price cumulatives remain functional after fee changes", async () => {

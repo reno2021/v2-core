@@ -19,7 +19,7 @@ Production-oriented Uniswap V2 core fork for **Robinhood Chain Dex & Stake**, ke
 - `UniswapV2Pair` now applies a **1.2% fee-on-input swap model**:
   - `0.9%` accounting allocation for rewards / buybacks / burns / raffles
   - `0.3%` accounting allocation for development
-- The pair transfers those two portions separately. They currently go to the same immutable admin wallet, but the contracts expose constants and emit per-swap accounting events so the split can be tracked off-chain.
+- The pair transfers those two portions separately. They currently go to the same immutable admin wallet, and the contracts emit a per-swap summary event so the split can be tracked off-chain.
 
 ## Fee model
 
@@ -66,7 +66,7 @@ Routers/periphery quoting this core fork must use the same `1.2%` fee formula in
 `UniswapV2Pair` emits:
 
 - standard `Mint`, `Burn`, `Swap`, `Sync`
-- `ProtocolFeePaid(sender, token, recipient, totalAmount, rewardAmount, developmentAmount)` once per non-zero reward/development transfer
+- `ProtocolFeePaid(sender, token, recipient, totalAmount, rewardAmount, developmentAmount)` once per token-side fee payment, with `totalAmount = rewardAmount + developmentAmount`
 
 Because integer division rounds down, `rewardAmount` is computed first and `developmentAmount` receives any remainder so the emitted split always sums to the exact transferred fee.
 

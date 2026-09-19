@@ -104,14 +104,10 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
             uint developmentAmount = feeAmount.sub(rewardAmount);
             address rewardRecipient = IUniswapV2Factory(factory).rewardFeeRecipient();
             address developmentRecipient = IUniswapV2Factory(factory).developmentFeeRecipient();
-            if (rewardAmount > 0) {
-                _safeTransfer(token, rewardRecipient, rewardAmount);
-                emit ProtocolFeePaid(msg.sender, token, rewardRecipient, rewardAmount, rewardAmount, 0);
-            }
-            if (developmentAmount > 0) {
-                _safeTransfer(token, developmentRecipient, developmentAmount);
-                emit ProtocolFeePaid(msg.sender, token, developmentRecipient, developmentAmount, 0, developmentAmount);
-            }
+            address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
+            if (rewardAmount > 0) _safeTransfer(token, rewardRecipient, rewardAmount);
+            if (developmentAmount > 0) _safeTransfer(token, developmentRecipient, developmentAmount);
+            emit ProtocolFeePaid(msg.sender, token, feeRecipient, feeAmount, rewardAmount, developmentAmount);
         }
     }
 
@@ -196,6 +192,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         );
         if (fee0 > 0) _takeProtocolFee(token0, amount0In);
         if (fee1 > 0) _takeProtocolFee(token1, amount1In);
+        require(IERC20(token0).balanceOf(address(this)) == balance0AfterFee && IERC20(token1).balanceOf(address(this)) == balance1AfterFee, 'UniswapV2: FEE_ON_TRANSFER_UNSUPPORTED');
         balance0 = balance0AfterFee;
         balance1 = balance1AfterFee;
         }
