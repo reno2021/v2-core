@@ -137,6 +137,7 @@ describe("UniswapV2ERC20", () => {
     const digest = await getApprovalDigest(
       token,
       { owner: wallet.address, spender: other.address, value: TEST_AMOUNT },
+      await chainIdReader.getChainId(),
       nonce,
       deadline
     );

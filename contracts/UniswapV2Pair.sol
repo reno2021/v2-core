@@ -179,26 +179,16 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
         uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
         require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
-        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
-        uint balance0Adjusted = balance0.mul(FEE_DENOMINATOR).sub(amount0In.mul(TOTAL_SWAP_FEE_BPS));
-        uint balance1Adjusted = balance1.mul(FEE_DENOMINATOR).sub(amount1In.mul(TOTAL_SWAP_FEE_BPS));
-        require(
-            balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(FEE_DENOMINATOR**2),
-            'UniswapV2: K'
-        );
-        }
-
         {
         uint fee0 = 0;
         uint fee1 = 0;
-        if (amount0In > 0) {
-            fee0 = _takeProtocolFee(token0, amount0In);
-            balance0 = balance0.sub(fee0);
-        }
-        if (amount1In > 0) {
-            fee1 = _takeProtocolFee(token1, amount1In);
-            balance1 = balance1.sub(fee1);
-        }
+        if (amount0In > 0) fee0 = amount0In.mul(TOTAL_SWAP_FEE_BPS) / FEE_DENOMINATOR;
+        if (amount1In > 0) fee1 = amount1In.mul(TOTAL_SWAP_FEE_BPS) / FEE_DENOMINATOR;
+        balance0 = balance0.sub(fee0);
+        balance1 = balance1.sub(fee1);
+        require(balance0.mul(balance1) >= uint(_reserve0).mul(_reserve1), 'UniswapV2: K');
+        if (fee0 > 0) _takeProtocolFee(token0, amount0In);
+        if (fee1 > 0) _takeProtocolFee(token1, amount1In);
         }
 
         _update(balance0, balance1, _reserve0, _reserve1);

@@ -20,7 +20,11 @@ export function expandTo18Decimals(n: number): BigNumber {
   return bigNumberify(n).mul(bigNumberify(10).pow(18));
 }
 
-function getDomainSeparator(name: string, tokenAddress: string) {
+function getDomainSeparator(
+  name: string,
+  tokenAddress: string,
+  chainId: BigNumber
+) {
   return keccak256(
     defaultAbiCoder.encode(
       ["bytes32", "bytes32", "bytes32", "uint256", "address"],
@@ -32,7 +36,7 @@ function getDomainSeparator(name: string, tokenAddress: string) {
         ),
         keccak256(toUtf8Bytes(name)),
         keccak256(toUtf8Bytes("1")),
-        1,
+        chainId,
         tokenAddress
       ]
     )
@@ -63,11 +67,12 @@ export async function getApprovalDigest(
     spender: string;
     value: BigNumber;
   },
+  chainId: BigNumber,
   nonce: BigNumber,
   deadline: BigNumber
 ): Promise<string> {
   const name = await token.name();
-  const DOMAIN_SEPARATOR = getDomainSeparator(name, token.address);
+  const DOMAIN_SEPARATOR = getDomainSeparator(name, token.address, chainId);
   return keccak256(
     solidityPack(
       ["bytes1", "bytes1", "bytes32", "bytes32"],
